@@ -22,6 +22,7 @@
 # 08-Mar-2021   Suresh Kumar    Added LPORT option
 
 from __future__ import print_function
+from telnetlib import NOP
 from bcc import BPF
 from bcc.containers import filter_by_containers
 from bcc.utils import printb
@@ -373,8 +374,16 @@ if debug or args.ebpf:
         exit()
 
 # process event
-def print_ipv4_event(cpu, data, size):
+def callback_lost_event(lost_ctx):
+    print(lost_ctx)
+    # event = b["ipv4_events"].event()
+def callback_event(cpu, data, size):
     event = b["ipv4_events"].event(data)
+    # for i in range (1, 100, 1):
+    #     for j in range (1, 100, 1):
+    #         event = b["ipv4_events"].event(data)
+
+
     # global start_ts
     # if args.timestamp:
     #     if start_ts == 0:
@@ -545,7 +554,8 @@ else:
     start_ts = 0
 
     # read events
-    b["ipv4_events"].open_perf_buffer(print_ipv4_event, page_cnt=8, lost_cb=None, wakeup_events=args.wakeup)
+    # b["ipv4_events"].open_perf_buffer(callback_event, page_cnt=8, lost_cb=callback_lost_event, wakeup_events=args.wakeup)
+    b["ipv4_events"].open_perf_buffer(callback_event, page_cnt=8, lost_cb=None, wakeup_events=args.wakeup)
     b["ipv6_events"].open_perf_buffer(print_ipv6_event)
     if args.dns:
         b["dns_events"].open_perf_buffer(save_dns)
