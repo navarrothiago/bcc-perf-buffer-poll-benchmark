@@ -1,0 +1,68 @@
+#!/usr/bin/python
+from __future__ import print_function
+import os
+from bcc import BPF
+from time import strftime
+import argparse
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
+parser = argparse.ArgumentParser(
+        description="Print entered bash commands from all running shells",
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.add_argument("-s", "--shared", nargs="?",
+        const="/lib/libreadline.so", type=str,
+        help="specify the location of libreadline.so library.\
+              Default is /lib/libreadline.so")
+parser.add_argument("-e", "--exepath", nargs="?",
+        type=str,
+        help="Executable path")
+parser.add_argument("-p", "--pid", nargs="?",
+        type=int,
+        help="PID")
+args = parser.parse_args()
+
+name = args.shared if args.shared else "/bin/bash"
+
+# load BPF program
+bpf_text = """
+#include <uapi/linux/ptrace.h>
+#include <linux/sched.h>
+
+BPF_PERF_OUTPUT(events);
+
+struct buffer {
+    char data[80];
+    u64 sz;
+};
+
+int do_entry(struct pt_regs *ctx) {
+    struct buffer buf={};
+    buf.sz = PT_REGS_PARM2(ctx);
+    if(buf.sz > 80){
+        buf.sz = 80;
+    }
+    //bpf_probe_read_user(&buf.data, buf.sz, (void *)PT_REGS_PARM1(ctx));
+    bpf_probe_read_user_str(&buf.data, buf.sz, (void *)PT_REGS_PARM1(ctx));
+    events.perf_submit(ctx,&buf,sizeof(buf));
+    return 0;
+}
+"""
+
+b = BPF(text=bpf_text)
+sym_pattern="hook"
+b.attach_uprobe(name=args.exepath, sym="hook", fn_name="do_entry", pid=args.pid)
+
+
+# header
+print("%-9s %-6s %s" % ("TIME", "PID", "COMMAND"))
+
+def print_event(cpu, data, size):
+    event = b["events"].event(data)
+    print("%-9s %s" % (strftime("%H:%M:%S"), event.data.decode('utf-8', 'replace')))
+
+b["events"].open_perf_buffer(print_event)
+while 1:
+    try:
+        b.perf_buffer_poll()
+    except KeyboardInterrupt:
+        exit()
