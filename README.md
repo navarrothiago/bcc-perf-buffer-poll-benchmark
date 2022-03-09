@@ -1,7 +1,23 @@
 Analysis of the BCC perf_poll API.
 
-The goal is to stress the CPU by triggering the BPF program (kprobe) attached in the tcp connect.
-In the end, the program generates a report for each execution. The reporst will be located in the [reports](./reports/) folder.
+The goal is to stress the CPU by triggering the BPF program (kprobe) attached in the tcp connect (`tcpconnect-test`) or hook (`hook`) functions.
+
+
+# Hook Application
+
+Term1:
+
+```
+taskset --cpu-list <cpu-id> ./build/hook <cpu-id> <frequency>
+```
+
+Term2:
+
+```
+sudo ./hook_uprobe -s /usr/lib/libreadline.so --pid $(pgrep hook) --exepath /work/mantisnet/bcc-perf-buffer-poll-benchmark/build/hook
+```
+
+# TCP Connect
 
 ## Steps
 
@@ -20,6 +36,8 @@ And just run the benchmark:
 
 > arg1: the total of iterations. Each iteraction executes 500 curl.
 > arg2: upper bound of wakeup_event. Starts with 1 and increase 10 for each interaction.
+
+In the end, the program generates a report for each execution. The report will be located in the [reports](./reports/) folder.
 
 ## Manually
 

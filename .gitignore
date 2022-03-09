@@ -1,2 +1,4 @@
 *.dump
 a.out
+build
+.vscode
