@@ -2,8 +2,8 @@
 from __future__ import print_function
 import os
 from bcc import BPF
-from time import strftime
 import argparse
+import time
 
 COUNT = 1
 SIZE = 0
@@ -36,6 +36,8 @@ name = args.shared if args.shared else "/bin/bash"
 bpf_text = """
 #include <uapi/linux/ptrace.h>
 #include <linux/sched.h>
+
+#define FROM_STACK
 
 BPF_PERF_OUTPUT(events);
 
