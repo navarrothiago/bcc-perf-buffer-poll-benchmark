@@ -5,6 +5,15 @@ from bcc import BPF
 from time import strftime
 import argparse
 
+COUNT = 1
+SIZE = 0
+
+def increment(size):
+    global COUNT
+    global SIZE
+    COUNT = COUNT+1
+    SIZE = SIZE + size
+
 dir_path = os.path.dirname(os.path.realpath(__file__))
 parser = argparse.ArgumentParser(
         description="Print entered bash commands from all running shells",
@@ -57,15 +66,25 @@ b.attach_uprobe(name=args.exepath, sym="hook", fn_name="do_entry", pid=args.pid)
 print("%-9s %-6s %s" % ("TIME", "PID", "COMMAND"))
 
 def print_event(cpu, data, size):
-    event = b["events"].event(data)
-    print("%-9s %s %d" % (strftime("%H:%M:%S"), event.data.decode('utf-8', 'replace'), cpu))
+    increment(size)
+    time.sleep(.00001)
+    # event = b["events"].event(data)
+    # print("%-9s %s %d" % (strftime("%H:%M:%S"), event.data.decode('utf-8', 'replace'), cpu))
 
 def callback_lost_event(lost_ctx):
-    print(lost_ctx)
+    print("events lost bytes {}".format(lost_ctx))
 
-b["events"].open_perf_buffer(print_event, lost_cb=callback_lost_event)
+b["events"].open_perf_buffer(print_event, lost_cb=callback_lost_event, page_cnt=4096)
+
+cur = time.time()
 while 1:
     try:
+        newTime = time.time()
+        if (newTime - cur > 1):
+            print("count: {} --- size: {} ".format(COUNT, SIZE/COUNT))
+            cur = newTime
+            COUNT = 1
+            SIZE = 0
         b.perf_buffer_poll()
     except KeyboardInterrupt:
         exit()

@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-#include <pthread.h>
 
 int hook(const char *data, uint32_t size) {
     //printf("data: %s\n", data);
@@ -16,7 +15,6 @@ int main(int argc, char const *argv[])
     printf("Description: Call hook function with frequency.\nThe taskset is used to setup the binary affinity.\n", argv[0]);
     exit(1);
   }
-
   int cpu = atoi(argv[1]);
   uint64_t freq = atoi(argv[2]);
   unsigned int periodInMicroSeconds = 1000000/freq;
