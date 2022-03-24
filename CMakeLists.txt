@@ -8,6 +8,7 @@ enable_testing()
 
 # add_library(hook_lib SHARED hook.c)
 add_executable(hook hook.c)
+add_executable(hook_thread thread.c)
 
 # target_link_libraries(hook hook_lib)
 
